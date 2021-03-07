@@ -14,6 +14,20 @@ def getListOfCSVEntries():
     url = "http://winterolympicsmedals.com/medals.csv"
     httpResponse = http.request('GET', url)
 
+    # this is data that will purposely fail our test parameters to make sure our csv validation works properly
+    badData = [
+        ['1908', 'Chamonix', 'Skating', 'Figure skating', 'AUT', 'individual', 'M', 'Silver'],
+        ['1924', '', 'Skating', 'Figure skating', 'AUT', 'individual', 'W', 'Gold'],
+        ['1924', 'Chamonix', '', 'Figure skating', 'AUT', 'pairs', 'X', 'Gold'],
+        ['1924', 'Chamonix', 'Bobsleigh', '', 'BEL', 'four-man', 'M', 'Bronze'],
+        ['1924', 'Chamonix', 'Ice Hockey', 'Ice Hockey', '', 'ice hockey', 'M', 'Gold'],
+        ['1924', 'Chamonix', 'Biathlon', 'Biathlon', 'FINLAND', 'military patrol', 'M', 'Silver'],
+        ['1924', 'Chamonix', 'Skating', 'Figure skating', 'FIN', '', 'X', 'Silver'],
+        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'V', 'Heavy'],
+        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'M', 'Silver', 'test'],
+        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'M']
+    ]
+
     # httpResponse.data is a member of the bytes class (essentially a string of bytes)
         # map takes the python built in chr function and applies it to each byte in data
         # and gives you back a map object. A map object is iterable, so you can
@@ -27,7 +41,7 @@ def getListOfCSVEntries():
     # convert listOfData into a list of lists, where each sublist represents a potential db entry
     for i in range(len(listOfData )):
         listOfData[i] = listOfData[i].split(",")
-    return listOfData
+    return badData + listOfData
 
 i = 0
 listOfEntries = getListOfCSVEntries()
@@ -36,5 +50,5 @@ listOfEntries = getListOfCSVEntries()
 for row in listOfEntries:
     print(row)
     i += 1
-    if i > 9:
+    if i > 19:
         break
