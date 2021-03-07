@@ -9,27 +9,29 @@ db = pymysql.connect(host="localhost",
 cursor = db.cursor()
 cursor.close()
 
-http = urllib3.PoolManager()
+def getListOfCSVEntries():
+    http = urllib3.PoolManager()
 
-url = "http://winterolympicsmedals.com/medals.csv"
-rawCSVFile = http.request('GET', url)
+    url = "http://winterolympicsmedals.com/medals.csv"
+    httpResponse = http.request('GET', url)
 
-# rawCSVFile.data is a member of the bytes class (essentially a string of bytes)
-    # map takes the built in chr function and applies it to each byte in data
-    # and gives you back a map object. A map object is iterable, so you can
-    # use the join function to convert it into a string
-    # TLDR the data is converted to a regular good old fashioned string
-data = "".join(map(chr, rawCSVFile.data))
+    # httpResponse.data is a member of the bytes class (essentially a string of bytes)
+        # map takes the python built in chr function and applies it to each byte in data
+        # and gives you back a map object. A map object is iterable, so you can
+        # use the join function to convert it into a string
+        # TLDR the data is converted to a regular good old fashioned string
+    listOfData = "".join(map(chr, httpResponse.data))
 
-# convert data into a list
-data = data.split('\n')
+    # convert listOfData into a list
+    listOfData = listOfData.split('\n')
+    return listOfData
 
 i = 0
+listOfEntries = getListOfCSVEntries()
 
 # prints first 10 rows of of the
-for row in data:
+for row in listOfEntries:
     print(row)
-    print(i)
     i += 1
     if i > 9:
         break
