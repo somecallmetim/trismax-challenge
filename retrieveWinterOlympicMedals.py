@@ -11,7 +11,6 @@ cursor.close()
 
 def getListOfCSVEntries():
     http = urllib3.PoolManager()
-
     url = "http://winterolympicsmedals.com/medals.csv"
     httpResponse = http.request('GET', url)
 
@@ -22,8 +21,12 @@ def getListOfCSVEntries():
         # TLDR the data is converted to a regular good old fashioned string
     listOfData = "".join(map(chr, httpResponse.data))
 
-    # convert listOfData into a list
+    # convert listOfData into a list of strings
     listOfData = listOfData.split('\n')
+
+    # convert listOfData into a list of lists, where each sublist represents a potential db entry
+    for i in range(len(listOfData )):
+        listOfData[i] = listOfData[i].split(",")
     return listOfData
 
 i = 0
