@@ -3,6 +3,8 @@ import pymysql
 import pandas as pd
 from pandas_schema import Column, Schema
 from pandas_schema.validation import InRangeValidation, InListValidation
+import requests
+import csv
 
 db = pymysql.connect(host="localhost",
                      user=config.username,
@@ -38,8 +40,20 @@ def validateData(pdDataFrame):
         errorsListIndexRows = [e.row for e in errorsList]
         pdCleanDataFrame = pdDataFrame.drop(index=errorsListIndexRows)
         pdCleanDataFrame.to_csv('cleanData.csv')
+        return pdCleanDataFrame
     else:
         pdDataFrame.to_csv('cleanData.csv')
+        return pdDataFrame
+
+# send clean csv back to client
+def sendBackCleanData():
+    # dummy url for testing purposes
+    url = "https://httpbin.org/post"
+    # opens csv, creates http request, and sends it to specified url
+    with open('cleanData.csv', 'r') as cleanData:
+        r = requests.post(url, files={'cleanData.csv': cleanData})
+        return r
 
 pdDataFrame = getPdDataFrame()
-validateData(pdDataFrame)
+pdDataFrame = validateData(pdDataFrame)
+sendBackCleanData()
