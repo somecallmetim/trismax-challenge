@@ -6,7 +6,7 @@ from pandas_schema.validation import InRangeValidation, InListValidation
 import requests
 
 # get the csv file and convert it to pandas's DataFrame data type
-def getPdDataFrame():
+def getCSVFile():
     url = "http://winterolympicsmedals.com/medals.csv"
     pdDataFrame = pd.read_csv(url)
     # this fixes issues caused by the fact that one of the columns in the csv file has two words
@@ -59,7 +59,7 @@ def sendBackCleanData():
         # return r so we can check and respond to various server responses
         return r
 
-pdDataFrame = getPdDataFrame()
+pdDataFrame = getCSVFile()
 pdDataFrame = validateData(pdDataFrame)
 sendBackCleanData()
 
