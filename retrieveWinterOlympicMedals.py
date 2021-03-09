@@ -1,6 +1,8 @@
-import urllib3
 import config
 import pymysql
+import pandas as pd
+from pandas_schema import Column, Schema
+from pandas_schema.validation import InRangeValidation, InListValidation
 
 db = pymysql.connect(host="localhost",
                      user=config.username,
@@ -9,49 +11,35 @@ db = pymysql.connect(host="localhost",
 cursor = db.cursor()
 cursor.close()
 
-def getListOfCSVEntries():
-    http = urllib3.PoolManager()
+# get the csv file and convert it to pandas's DataFrame data type
+def getPdDataFrame():
     url = "http://winterolympicsmedals.com/medals.csv"
-    httpResponse = http.request('GET', url)
+    return pd.read_csv(url)
 
-    # this is data that will purposely fail our test parameters to make sure our csv validation works properly
-    badData = [
-        ['1908', 'Chamonix', 'Skating', 'Figure skating', 'AUT', 'individual', 'M', 'Silver'],
-        ['1924', '', 'Skating', 'Figure skating', 'AUT', 'individual', 'W', 'Gold'],
-        ['1924', 'Chamonix', '', 'Figure skating', 'AUT', 'pairs', 'X', 'Gold'],
-        ['1924', 'Chamonix', 'Bobsleigh', '', 'BEL', 'four-man', 'M', 'Bronze'],
-        ['1924', 'Chamonix', 'Ice Hockey', 'Ice Hockey', '', 'ice hockey', 'M', 'Gold'],
-        ['1924', 'Chamonix', 'Biathlon', 'Biathlon', 'FINLAND', 'military patrol', 'M', 'Silver'],
-        ['1924', 'Chamonix', 'Skating', 'Figure skating', 'FIN', '', 'X', 'Silver'],
-        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'V', 'Heavy'],
-        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'M', 'Silver', 'test'],
-        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'M']
-    ]
+# validate the data in the DataFrame (from the csv file)
+def validateData(pdDataFrame):
+    # this tells pandas_schema what the data should look like
+    schema = Schema([
+        Column('Year', [InRangeValidation(1924, 2020)], allow_empty=False),
+        Column('City', allow_empty=False),
+        Column('Sport', allow_empty=False),
+        Column('Discipline', allow_empty=False),
+        Column('NOC', allow_empty=False),
+        Column('Event', allow_empty=False),
+        Column('Event gender', [InListValidation(['M', 'W', 'X'])], allow_empty=False),
+        Column('Medal', [InListValidation(['Gold', 'Silver', 'Bronze'])], allow_empty=False),
+    ])
 
-    # httpResponse.data is a member of the bytes class (essentially a string of bytes)
-        # map takes the python built in chr function and applies it to each byte in data
-        # and gives you back a map object. A map object is iterable, so you can
-        # use the join function to convert it into a string
-        # TLDR the data is converted to a regular good old fashioned string
-    listOfData = "".join(map(chr, httpResponse.data))
+    # passes DataFrame to pandas_schema and validates the data based on the parameters we've already set
+    errorsList = schema.validate(pdDataFrame)
 
-    # convert listOfData into a list of strings
-    listOfData = listOfData.split('\n')
+    # if there are errors, remove them from the data then save the data as a new csv
+    if errorsList:
+        errorsListIndexRows = [e.row for e in errorsList]
+        pdCleanDataFrame = pdDataFrame.drop(index=errorsListIndexRows)
+        pdCleanDataFrame.to_csv('cleanData.csv')
+    else:
+        pdDataFrame.to_csv('cleanData.csv')
 
-    # remove header from listOfData
-    del listOfData[0]
-
-    # convert listOfData into a list of lists, where each sublist represents a potential db entry
-    for i in range(len(listOfData )):
-        listOfData[i] = listOfData[i].split(",")
-    return badData + listOfData
-
-i = 0
-listOfEntries = getListOfCSVEntries()
-
-# prints first 10 rows of of the
-for row in listOfEntries:
-    print(row)
-    i += 1
-    if i > 19:
-        break
+pdDataFrame = getPdDataFrame()
+validateData(pdDataFrame)
