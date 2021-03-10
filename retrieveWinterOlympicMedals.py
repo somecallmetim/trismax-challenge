@@ -4,6 +4,8 @@ import pandas as pd
 from pandas_schema import Column, Schema
 from pandas_schema.validation import InRangeValidation, InListValidation
 import requests
+import datetime
+
 
 # get the csv file and convert it to pandas's DataFrame data type
 def getCSVFile():
@@ -14,8 +16,9 @@ def getCSVFile():
     pdDataFrame.columns = ['Year', 'City', 'Sport', 'Discipline', 'NOC', 'Event', 'Gender', 'Medal']
     return pdDataFrame
 
+
 # validate the data in the DataFrame (from the csv file)
-def validateData(pdDataFrame):
+def validateData(pdDataFrame, logFileName):
     # this tells pandas_schema what the data should look like
     schema = Schema([
         Column('Year', [InRangeValidation(1924, 2020)], allow_empty=False),
@@ -33,9 +36,13 @@ def validateData(pdDataFrame):
 
     # if there are errors, remove them from the data then save the data as a new csv
     if errorsList:
+        logFile = open("./logs/" + logFileName, "a+")
+        logFile.write("list of errors concerning submitted data\n---------------")
         # print errors in data entry that occurred
         for e in errorsList:
+            logFile.write(e)
             print(e)
+        logFile.close()
         # gets the indexes of the bad data (list comprehension)
         errorsListIndexRows = [e.row for e in errorsList]
         # drops the bad data and gives you a new DataFrame with only clean data
@@ -48,20 +55,28 @@ def validateData(pdDataFrame):
         pdDataFrame.to_csv('cleanData.csv')
         return pdDataFrame
 
+
 # send clean csv back to client
-def sendBackCleanData():
+def sendBackCleanData(logFileNmae):
     # dummy url for testing purposes
     url = "https://httpbin.org/post"
     # opens csv, creates http request, and sends it to specified url
     with open('cleanData.csv', 'r') as cleanData:
         r = requests.post(url, files={'cleanData.csv': cleanData})
-        print(r)
+        logFile = open("./logs/" + logFileName, "a+")
+        logFile.write("status code for the csv we sent to client: " + str(r.status_code))
+        print(r.status_code)
         # return r so we can check and respond to various server responses
         return r
 
+
+now = str(datetime.datetime.now().replace(microsecond=0))
+logFileName = 'logFile: ' + now
+print(logFileName)
+# logFile = open("./logs/" + logFileName, "a+")
 pdDataFrame = getCSVFile()
-pdDataFrame = validateData(pdDataFrame)
-sendBackCleanData()
+pdDataFrame = validateData(pdDataFrame, logFileName)
+r = sendBackCleanData(logFileName)
 
 # persists clean data into mysql database
 engine = create_engine('mysql+pymysql://'
