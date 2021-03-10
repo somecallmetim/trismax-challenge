@@ -62,24 +62,34 @@ def sendBackCleanData(logFileNmae):
     url = "https://httpbin.org/post"
     # opens csv, creates http request, and sends it to specified url
     with open('cleanData.csv', 'r') as cleanData:
-        r = requests.post(url, files={'cleanData.csv': cleanData})
+        response = requests.post(url, files={'cleanData.csv': cleanData})
         logFile = open("./logs/" + logFileName, "a+")
-        logFile.write("status code for the csv we sent to client: " + str(r.status_code))
-        print(r.status_code)
-        # return r so we can check and respond to various server responses
-        return r
+        logFile.write("status code for the csv we sent to client: " + str(response.status_code))
+        print(response.status_code)
+        # return response so we can check and respond to various server responses
+        return response
+
+def findSQLEntriesByNocMedalAndYear(dbEngine, noc, medal, year):
+    noc = "'" + noc + "'"
+    medal = "'" + medal + "'"
+    with dbEngine.connect() as dbConnection:
+        sqlQuery = 'SELECT * FROM winterOlympics WHERE noc = {} AND medal = {} AND year = {}'.format(noc, medal, year)
+        dbResponse = dbConnection.execute(sqlQuery)
+        for row in dbResponse:
+            print(row)
 
 
 now = str(datetime.datetime.now().replace(microsecond=0))
 logFileName = 'logFile: ' + now
-print(logFileName)
-# logFile = open("./logs/" + logFileName, "a+")
+
 pdDataFrame = getCSVFile()
 pdDataFrame = validateData(pdDataFrame, logFileName)
-r = sendBackCleanData(logFileName)
+httpResponse = sendBackCleanData(logFileName)
 
 # persists clean data into mysql database
 engine = create_engine('mysql+pymysql://'
                        + config.username + ':' + config.password + '@localhost/' + config.dbName)
 # creates table if doesn't exist, replaces table if it does exist
 pdDataFrame.to_sql('winterOlympics', engine, if_exists='replace', index=False)
+
+findSQLEntriesByNocMedalAndYear(engine, 'usa', 'gold', 2006)
