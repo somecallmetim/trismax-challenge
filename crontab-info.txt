@@ -1,6 +1,6 @@
-1. set up bash script so you can make sure crontab is using the correct anaconda env, etc
+1. set up bash script so you can make sure crontab is using the correct anaconda env, etc (see crontab_script.sh)
 
-2. crontab -e : to add and setup the bash script to run your program at specified days/times/etc (see crontab_script.sh)
+2. crontab -e : to add and setup the bash script to run your program at specified days/times/etc
 
 3. run script every 1 minute for testing
    * * * * * /home/somecallmetim/PycharmProjects/trismax-challenge/contrab_script.sh
