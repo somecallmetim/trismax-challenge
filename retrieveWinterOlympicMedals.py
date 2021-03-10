@@ -1,57 +1,95 @@
-import urllib3
 import config
-import pymysql
+from sqlalchemy import create_engine
+import pandas as pd
+from pandas_schema import Column, Schema
+from pandas_schema.validation import InRangeValidation, InListValidation
+import requests
+import datetime
 
-db = pymysql.connect(host="localhost",
-                     user=config.username,
-                     passwd=config.password,
-                     db=config.dbName)
-cursor = db.cursor()
-cursor.close()
 
-def getListOfCSVEntries():
-    http = urllib3.PoolManager()
+# get the csv file and convert it to pandas's DataFrame data type
+def getCSVFile():
     url = "http://winterolympicsmedals.com/medals.csv"
-    httpResponse = http.request('GET', url)
+    pdDataFrame = pd.read_csv(url)
+    # this fixes issues caused by the fact that one of the columns in the csv file has two words
+        # separated by a white space by forcing these specific column names to be used
+    pdDataFrame.columns = ['Year', 'City', 'Sport', 'Discipline', 'NOC', 'Event', 'Gender', 'Medal']
+    return pdDataFrame
 
-    # this is data that will purposely fail our test parameters to make sure our csv validation works properly
-    badData = [
-        ['1908', 'Chamonix', 'Skating', 'Figure skating', 'AUT', 'individual', 'M', 'Silver'],
-        ['1924', '', 'Skating', 'Figure skating', 'AUT', 'individual', 'W', 'Gold'],
-        ['1924', 'Chamonix', '', 'Figure skating', 'AUT', 'pairs', 'X', 'Gold'],
-        ['1924', 'Chamonix', 'Bobsleigh', '', 'BEL', 'four-man', 'M', 'Bronze'],
-        ['1924', 'Chamonix', 'Ice Hockey', 'Ice Hockey', '', 'ice hockey', 'M', 'Gold'],
-        ['1924', 'Chamonix', 'Biathlon', 'Biathlon', 'FINLAND', 'military patrol', 'M', 'Silver'],
-        ['1924', 'Chamonix', 'Skating', 'Figure skating', 'FIN', '', 'X', 'Silver'],
-        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'V', 'Heavy'],
-        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'M', 'Silver', 'test'],
-        ['1924', 'Chamonix', 'Skating', 'Speed skating', 'FIN', '10000m', 'M']
-    ]
 
-    # httpResponse.data is a member of the bytes class (essentially a string of bytes)
-        # map takes the python built in chr function and applies it to each byte in data
-        # and gives you back a map object. A map object is iterable, so you can
-        # use the join function to convert it into a string
-        # TLDR the data is converted to a regular good old fashioned string
-    listOfData = "".join(map(chr, httpResponse.data))
+# validate the data in the DataFrame (from the csv file)
+def validateData(pdDataFrame, logFileName):
+    # this tells pandas_schema what the data should look like
+    schema = Schema([
+        Column('Year', [InRangeValidation(1924, 2020)], allow_empty=False),
+        Column('City', allow_empty=False),
+        Column('Sport', allow_empty=False),
+        Column('Discipline', allow_empty=False),
+        Column('NOC', allow_empty=False),
+        Column('Event', allow_empty=False),
+        Column('Gender', [InListValidation(['M', 'W', 'X'])], allow_empty=False),
+        Column('Medal', [InListValidation(['Gold', 'Silver', 'Bronze'])], allow_empty=False),
+    ])
 
-    # convert listOfData into a list of strings
-    listOfData = listOfData.split('\n')
+    # passes DataFrame to pandas_schema and validates the data based on the parameters we've already set
+    errorsList = schema.validate(pdDataFrame)
 
-    # remove header from listOfData
-    del listOfData[0]
+    # if there are errors, remove them from the data then save the data as a new csv
+    if errorsList:
+        logFile = open("./logs/" + logFileName, "a+")
+        logFile.write("list of errors concerning submitted data\n---------------")
+        # print errors in data entry that occurred
+        for e in errorsList:
+            logFile.write(e)
+            print(e)
+        logFile.close()
+        # gets the indexes of the bad data (list comprehension)
+        errorsListIndexRows = [e.row for e in errorsList]
+        # drops the bad data and gives you a new DataFrame with only clean data
+        pdCleanDataFrame = pdDataFrame.drop(index=errorsListIndexRows)
+        # converts clean data to csv to later send to stake holders
+        pdCleanDataFrame.to_csv('cleanData.csv')
+        return pdCleanDataFrame
+    else:
+        # converts clean data to csv to later send to stake holders
+        pdDataFrame.to_csv('cleanData.csv')
+        return pdDataFrame
 
-    # convert listOfData into a list of lists, where each sublist represents a potential db entry
-    for i in range(len(listOfData )):
-        listOfData[i] = listOfData[i].split(",")
-    return badData + listOfData
 
-i = 0
-listOfEntries = getListOfCSVEntries()
+# send clean csv back to client
+def sendBackCleanData(logFileNmae):
+    # dummy url for testing purposes
+    url = "https://httpbin.org/post"
+    # opens csv, creates http request, and sends it to specified url
+    with open('cleanData.csv', 'r') as cleanData:
+        response = requests.post(url, files={'cleanData.csv': cleanData})
+        logFile = open("./logs/" + logFileName, "a+")
+        logFile.write("status code for the csv we sent to client: " + str(response.status_code))
+        print(response.status_code)
+        # return response so we can check and respond to various server responses
+        return response
 
-# prints first 10 rows of of the
-for row in listOfEntries:
-    print(row)
-    i += 1
-    if i > 19:
-        break
+def findSQLEntriesByNocMedalAndYear(dbEngine, noc, medal, year):
+    noc = "'" + noc + "'"
+    medal = "'" + medal + "'"
+    with dbEngine.connect() as dbConnection:
+        sqlQuery = 'SELECT * FROM winterOlympics WHERE noc = {} AND medal = {} AND year = {}'.format(noc, medal, year)
+        dbResponse = dbConnection.execute(sqlQuery)
+        for row in dbResponse:
+            print(row)
+
+
+now = str(datetime.datetime.now().replace(microsecond=0))
+logFileName = 'logFile: ' + now
+
+pdDataFrame = getCSVFile()
+pdDataFrame = validateData(pdDataFrame, logFileName)
+httpResponse = sendBackCleanData(logFileName)
+
+# persists clean data into mysql database
+engine = create_engine('mysql+pymysql://'
+                       + config.username + ':' + config.password + '@localhost/' + config.dbName)
+# creates table if doesn't exist, replaces table if it does exist
+pdDataFrame.to_sql('winterOlympics', engine, if_exists='replace', index=False)
+
+findSQLEntriesByNocMedalAndYear(engine, 'usa', 'gold', 2006)
