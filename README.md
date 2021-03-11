@@ -35,10 +35,10 @@ I used "https://httpbin.org/post" to test my post request. I also could have set
 project seemed to be to hit the minimal functionality as quickly as possible. As such, I was more concerned that everything functioned as intended quickly than that every 
 detail was perfect. I also set up some very basic logging to make sure things were working correctly, particularly when I started working on the crontab portion of the app.
 
-The SQL query function was sort of tacked on at the end and really didn't seem to fit the rest of the challenge. There was a lot of emphasis on dealing with this CSV file
-and then, at the very end, was a bit about doing a single SQL query involving three data fields. If I had more time, maybe I would have set up an Apache server with a 
-basic web page, or set up some kind of API endpoint, or set up postman, etc. But the company in question mostly just seemed interested in whether or not I could write a
-simple SQL query. So that's there and that's what it does. 
+The SQL query function was sort of tacked on at the end and really didn't seem to fit the rest of the challenge. There was a lot of emphasis on dealing with the original 
+CSV file and then, at the very end, was a bit about doing a single SQL query involving three data fields. If I had more time, maybe I would have set up an Apache server 
+with a basic web page, or set up some kind of API endpoint, or set up postman, etc. But the company in question mostly just seemed interested in whether or not I could 
+write a simple SQL query. So that's there and that's what it does. 
 
 I ended up using crontab to run the app weekly at it's scheduled time. This is mostly because I'd previously done precisely this for a small app I built that got 
 Twitter results periodically a while back. In hindsight, I wonder if it would have been better to just run the app continually and have it monitor it's own tasks and do them
