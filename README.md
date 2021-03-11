@@ -12,7 +12,9 @@ The upshot of what I was asked to do was essentially
   - send clean CSV file to a specified URL
   - be able to perform simple SQL queries on the data (ie search by NOC, year, and medal type)
   - run app once a week at specified time
+
 Things I added
+
   - persist clean data to database (this seemed to be implied, but wasn't specifically asked for)
   - added basic logging for http responses related to sending out the clean CSV
   - also logged errors related to the format of the original CSV file
