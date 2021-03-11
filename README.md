@@ -1,5 +1,5 @@
 # trismax-challenge
-program to retrieve CSV files and perform databse operations
+- program to retrieve CSV files and perform database operations -
 
 This is a quick app I put together for a company as part of their interview process. With that being said, the emphasis here really seemed to be on meeting the list of
 deliverables as quickly as possible instead of creating the most robust and fully featured app possible. This is not meant to be a finished product. Below, I will list
