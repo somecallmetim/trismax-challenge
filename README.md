@@ -20,7 +20,7 @@ Things I added
   - also logged errors related to the format of the original CSV file
   
 I really wasn't given any other parameters for this problem, not even so much as a desired framework or language. I went with Python for this challenge because I 
-already had experience parsing CSV files with Python and, since there was a bit of a time consideration here, I didn't want to learn anything new if I didn't have to. 
+already had experience parsing CSV files with Python and, since there was a bit of a time consideration here, I wanted to stick with things I was already familiar with as much as possible. 
 I used the Winter Olympics CSV file because I stumbled on it while doing some research and it was a convenient CSV file I could just download and work with 
 without having to think about anything else. 
 
